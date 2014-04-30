@@ -182,7 +182,7 @@ namespace AzureDirectory
 			{
 				if (_locks.ContainsKey(name))
 				{
-					_locks.Remove(name);
+					_locks[name].Release();
 				}
 			}
 		}

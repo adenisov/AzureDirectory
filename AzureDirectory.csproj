@@ -74,7 +74,6 @@
     <Compile Include="AzureIndexInput.cs" />
     <Compile Include="AzureIndexOutput.cs" />
     <Compile Include="AzureLock.cs" />
-    <Compile Include="BlobMutexManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

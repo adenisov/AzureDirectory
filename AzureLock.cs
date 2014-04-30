@@ -1,12 +1,13 @@
 ﻿
-using System.IO;
 using Lucene.Net.Store;
 
 using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
-using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace AzureDirectory
 {
@@ -42,9 +43,9 @@ namespace AzureDirectory
 							var azureLock = (AzureLock) obj;
 							azureLock.Renew();
 						}
-						catch (Exception)
+						catch (Exception e)
 						{
-							throw;
+							Debug.Write(e, "Lease timer job");
 						}
 					}, this, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 				}
@@ -53,9 +54,10 @@ namespace AzureDirectory
 			}
 			catch (StorageException e)
 			{
-				CreateLockFile(blob);
-
-				return Obtain();
+				if (CreateLockFile(blob, e))
+				{
+					return Obtain();
+				}
 			}
 			catch (Exception)
 			{
@@ -98,16 +100,23 @@ namespace AzureDirectory
 
 		#endregion
 
-		private void CreateLockFile(ICloudBlob blob)
+		private bool CreateLockFile(ICloudBlob blob, StorageException e)
 		{
-			using (var stream = new MemoryStream())
+			if (e.HResult == 404 || e.HResult == 409)
 			{
-				using (var writer = new StreamWriter(stream))
+				using (var stream = new MemoryStream())
 				{
-					writer.Write(_lockFile);
-					blob.UploadFromStream(stream);
+					using (var writer = new StreamWriter(stream))
+					{
+						writer.Write(_lockFile);
+						blob.UploadFromStream(stream);
+					}
 				}
+
+				return true;
 			}
+
+			return false;
 		}
 
 		public override string ToString()
